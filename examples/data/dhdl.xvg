@@ -1,0 +1,53 @@
+# This file was created Fri May 12 10:34:23 2023
+# Created by:
+#                       :-) GROMACS - gmx mdrun, 2023 (-:
+# 
+# Executable:   /opt/tcbsys/gromacs/2023/gmx_mpi/AVX2_256/bin/gmx_mpi
+# Data prefix:  /opt/tcbsys/gromacs/2023/gmx_mpi/AVX2_256
+# Working dir:  /mnt/cephfs/projects/2022032200_nachrs_modulator/fep_tutorial/InputFiles_ABFE_GMX2016/awh_fep_pulling/AWH/rep1
+# Command line:
+#   gmx_mpi mdrun -deffnm awh -multidir rep1 rep2 rep3 rep4 rep5 rep6 rep7 rep8 -pme cpu -bonded gpu -nb gpu -px awh_pullx -pf awh_pullf -maxh 23 -ntomp 8 -cpi awh -dhdl dhdl
+# gmx mdrun is part of G R O M A C S:
+#
+# Glycine aRginine prOline Methionine Alanine Cystine Serine
+#
+@    title "dH/d\xl\f{} and \xD\f{}H"
+@    xaxis  label "Time (ps)"
+@    yaxis  label "dH/d\xl\f{} and \xD\f{}H (kJ/mol [\xl\f{}]\S-1\N)"
+@TYPE xy
+@ subtitle "T = 300 (K) "
+@ view 0.15, 0.15, 0.75, 0.85
+@ legend on
+@ legend box on
+@ legend loctype view
+@ legend 0.78, 0.8
+@ legend length 2
+@ s0 legend "Thermodynamic state"
+@ s1 legend "dH/d\xl\f{} fep-lambda = 0.0000"
+@ s2 legend "\xD\f{}H \xl\f{} to 1.0000"
+@ s3 legend "\xD\f{}H \xl\f{} to 0.9500"
+@ s4 legend "\xD\f{}H \xl\f{} to 0.9000"
+@ s5 legend "\xD\f{}H \xl\f{} to 0.8500"
+@ s6 legend "\xD\f{}H \xl\f{} to 0.8000"
+@ s7 legend "\xD\f{}H \xl\f{} to 0.7500"
+@ s8 legend "\xD\f{}H \xl\f{} to 0.7000"
+@ s9 legend "\xD\f{}H \xl\f{} to 0.6500"
+@ s10 legend "\xD\f{}H \xl\f{} to 0.6000"
+@ s11 legend "\xD\f{}H \xl\f{} to 0.5500"
+@ s12 legend "\xD\f{}H \xl\f{} to 0.5000"
+@ s13 legend "\xD\f{}H \xl\f{} to 0.4500"
+@ s14 legend "\xD\f{}H \xl\f{} to 0.4000"
+@ s15 legend "\xD\f{}H \xl\f{} to 0.3500"
+@ s16 legend "\xD\f{}H \xl\f{} to 0.3000"
+@ s17 legend "\xD\f{}H \xl\f{} to 0.2500"
+@ s18 legend "\xD\f{}H \xl\f{} to 0.2000"
+@ s19 legend "\xD\f{}H \xl\f{} to 0.1500"
+@ s20 legend "\xD\f{}H \xl\f{} to 0.1000"
+@ s21 legend "\xD\f{}H \xl\f{} to 0.0500"
+@ s22 legend "\xD\f{}H \xl\f{} to 0.0000"
+@ s23 legend "pV (kJ/mol)"
+0.0000   20 -210.42165 -187.79102 -182.57883 -175.66859 -167.85248 -159.46328 -150.66731 -141.56031 -132.20527 -122.64836 -112.92182 -103.05367 -93.065207 -82.973805 -72.796008 -62.543897 -52.228397 -41.859503 -31.445529 -20.993373 -10.509708 0.0000000 55.231472
+200.0000    0 -253.39572 0.0000000 11.642282 21.831103 31.208966 40.125266 48.777084 57.278474 65.698108 74.077420 82.444601 90.815025 99.198396 107.60282 116.02934 124.48128 132.95831 141.46026 149.98624 158.53518 167.10533 175.69547 55.481911
+400.0000    2 -11.328918 17.275914 2.1470246 0.0000000 2.1138245 6.3059876 11.764645 18.098006 25.080872 32.566744 40.455058 48.668889 57.150122 65.854439 74.743196 83.787528 92.962437 102.24695 111.62364 121.07806 130.59728 140.17064 55.678230
+600.0000    0 0.53314209 0.0000000 2.5062195 7.6833831 14.030515 21.023856 28.434296 36.140161 44.068240 52.168500 60.408209 68.760498 77.205515 85.727740 94.313550 102.95275 111.63658 120.35726 129.10810 137.88419 146.68022 155.49231 55.381596
+800.0000    7 -83.150070 112.43955 49.433339 19.984802 5.0427201 -2.0244461 -4.2490753 -3.2537643 0.0000000 4.8968079 11.027098 18.100649 25.909375 34.299629 43.152858 52.380183 61.910406 71.687379 81.665878 91.810046 102.08973 112.48047 55.610378
