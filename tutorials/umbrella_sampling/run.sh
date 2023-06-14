@@ -31,7 +31,7 @@ gmx mdrun -v -deffnm nvt
 ## Step 6.1
 ## NPT eq
 gmx grompp -f mdp/npt.mdp -o npt.tpr -p topol.top -c nvt.gro -r nvt.gro -maxwarn 2
-gmx mdrun -v -deffnm nvt
+gmx mdrun -v -deffnm npt
 
 ## Step 6.2
 ## convert gro to pdb file
