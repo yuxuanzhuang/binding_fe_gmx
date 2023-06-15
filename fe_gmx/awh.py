@@ -34,6 +34,45 @@ class AWH_Ensemble(object):
                  regenerate_dhdl: bool = False,
                  temperature: float = 300.0,
                  ):
+        """
+        Parameters
+        ----------
+        folder : str
+            The folder that contains the awh results.
+            The structure of the folder should be:
+            folder
+            ├── rep1
+            │   ├── awh_pullx.xvg
+            │   ├── awh_pullf.xvg
+            │   ├── dhdl.xvg
+            │   └── awh.log
+            ├── rep2
+            │   ├── ...
+        replicate_prefix : str, optional
+            The prefix of the replicate folders, by default 'rep'
+        pullx_file : str, optional
+            The name of the pullx file, by default 'awh_pullx.xvg'
+        pullf_file : str, optional
+            The name of the pullf file, by default 'awh_pullf.xvg'
+        dhdl_file : str, optional
+            The name of the dhdl file, by default 'dhdl.xvg'
+        log_file : str, optional
+            The name of the log file, by default 'awh.log'
+        awh_result_folder : str, optional
+            The name of the folder that contains the awh results, by default 'awh_result'
+        results_more : bool, optional
+            Whether awh results contains more results
+            (from `gmx awh -more`), by default True
+        stride : int, optional
+            The stride of the pulling data, by default 1
+        regenerate_awh : bool, optional
+            Whether to regenerate the awh results, by default False
+        regenerate_dhdl : bool, optional
+            Whether to regenerate the dhdl results, by default False
+        temperature : float, optional
+            The temperature of the simulation to set up kT value,
+            by default 300.0
+        """
         self.folder = folder
         self.replicate_prefix = replicate_prefix
         self.awh_result_folder = awh_result_folder
@@ -342,7 +381,6 @@ class AWH_2D_Ensemble(AWH_Ensemble):
     """
     AWH ensemble class for 2D PMF.
     """
-
     @staticmethod
     def get_awh_pmf(awh_file, results_more):
         """
@@ -384,7 +422,6 @@ class AWH_2D_Ensemble(AWH_Ensemble):
         ffmpeg : str
             The path to the ffmpeg executable.
         """
-
         os.makedirs(self.folder + '/video/', exist_ok=True)
         from tqdm import tqdm
         for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
@@ -438,4 +475,3 @@ class AWH_2D_Ensemble(AWH_Ensemble):
         
         if remove_img:
             os.system(f'rm {self.folder}/video/{name}_*.png')
-    

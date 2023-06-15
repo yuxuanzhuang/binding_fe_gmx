@@ -1,1 +1,10 @@
 # List required packages in this file, one per line.
+dask
+distributed
+matplotlib
+seaborn
+tqdm
+numpy
+pandas
+scikit-learn
+mdanalysis @ git+https://github.com/yuxuanzhuang/mdanalysis#egg=with_fasttrans&subdirectory=package
