@@ -132,3 +132,27 @@ class AWH_2D_XVG(XVG):
     
         for i, arr in enumerate(np.split(self.data, self.dim1)):
             self.awh_pmf[i] = arr
+
+class AWH_3D_XVG(XVG):
+    """
+    Special class for 3D AWH xvg file.
+    The first three columns are the pulling dimensions.
+    """
+    def __init__(self, location, index=0, custom_names=None):
+        super().__init__(location, index, custom_names)
+        self.convert_3d_array()
+
+    def convert_3d_array(self):
+        """
+        Convert the data to 3D array.
+        """
+        print(self.data.shape)
+        self.dim1 = self.data.iloc[:,0].unique().shape[0]
+        self.dim2 = self.data.iloc[:,1].unique().shape[0]
+        self.dim3 = self.data.iloc[:,2].unique().shape[0]
+
+        self.awh_pmf = np.zeros((self.dim1, self.dim2, self.dim3, self.data.shape[1]))
+    
+        for i, arrs in enumerate(np.split(self.data, self.dim1)):
+            for j, arr in enumerate(np.split(arrs, self.dim2)):
+                self.awh_pmf[i, j] = arr    

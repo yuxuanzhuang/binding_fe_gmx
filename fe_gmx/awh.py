@@ -11,7 +11,7 @@ from typing import List, Tuple, Union, Dict, Any, Optional
 from MDAnalysis.analysis.base import Results
 
 from .utils.dhdl import AWH_DHDL
-from .utils.xvg import XVG, AWH_1D_XVG, AWH_2D_XVG
+from .utils.xvg import XVG, AWH_1D_XVG, AWH_2D_XVG, AWH_3D_XVG
 from .utils.log import AWH_LOG
 
 
@@ -475,3 +475,27 @@ class AWH_2D_Ensemble(AWH_Ensemble):
         
         if remove_img:
             os.system(f'rm {self.folder}/video/{name}_*.png')
+
+class AWH_3D_Ensemble(AWH_Ensemble):
+    """
+    AWH ensemble class for 3D PMF.
+    """
+    @staticmethod
+    def get_awh_pmf(awh_file, results_more):
+        """
+        Returns the 3D PMF of the AWH file.
+        """
+        time = awh_file.split('/')[-1].split('.')[0].split('_')[-1]
+
+        if results_more:
+            awh_pmf_xvg = AWH_3D_XVG(awh_file, custom_names=[
+                        'dim1', 'dim2', 'dim3',
+                        'PMF', 'Coord_bias', 'Coord_distr',
+                        'Ref_value_distr', 'Target_ref_value_distr',
+                        'Friction_metric'])
+        else:
+            awh_pmf_xvg = AWH_3D_XVG(awh_file, custom_names=[
+                        'dim1', 'dim2', 'dim3',
+                        'PMF'])
+        
+        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf
