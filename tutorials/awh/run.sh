@@ -38,14 +38,14 @@ gmx mdrun -v -deffnm npt
 echo 0 | gmx trjconv -f npt.gro -s npt.tpr -o eq.pdb
 
 ## Step 7
-## Pulling to generate initial coordinates for umbrella sampling
+## generate AWH walkers
+mkdir AWH
+mkdir AWH/rep{1..4}
 gmx select -f eq.pdb -s eq.pdb -on index.ndx
 ## select 0,2,3
-gmx grompp -f mdp/pulling.mdp -o pulling.tpr -p topol.top -c eq.pdb -r eq.pdb -maxwarn 2
-gmx mdrun -v -deffnm pulling
+gmx grompp -f mdp/awh.mdp -o AWH/awh.tpr -c eq.pdb -r eq.pdb -p topol.top -maxwarn 2 -n index.ndx
+for rep in {1..4};
+    do cp AWH/awh.tpr AWH/rep$rep;
+done
 
-## Step 8
-## Get initial configuration for umbrella sampling
-## open pulling.ipynb
-## run the notebook
-## it will create us folder with 40 windows
+sbatch jobscript.sh
