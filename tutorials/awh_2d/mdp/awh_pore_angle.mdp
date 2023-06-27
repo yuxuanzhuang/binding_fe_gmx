@@ -94,7 +94,7 @@ pull_coord4_geometry = angle-axis ; orientation of ligand
 pull_coord4_start = yes
 pull_coord4_vec = 0 0 1
 ;
-; restraint +-36 degree angle to binding site
+; restraint +-25 degree angle to binding site
 pull_coord5_groups = 2 5 1 5
 pull_coord5_type = flat-bottom
 pull_coord5_dim = Y Y N
