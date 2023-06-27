@@ -1,0 +1,146 @@
+define                   = -DREST_PORE_ON
+integrator               = md
+tinit                    = 0.0
+dt                       = 0.002
+nsteps                   = 1500000000
+init-step                = 0
+simulation-part          = 1
+comm_mode                = Linear
+;nstcomm                  = 100 ; Should not be lower than nstcalcenergy
+;comm_grps                = system
+nstxout                  = 0
+nstvout                  = 0
+nstfout                  = 0
+nstlog                   = 20000
+nstcalcenergy            = 100 ; Should not be higher than nstcomm
+nstenergy                = 50000
+nstxout-compressed       = 50000
+compressed-x-precision   = 1000
+;
+cutoff-scheme           = Verlet
+nstlist                 = 20
+rlist                   = 1.2
+coulombtype             = pme
+rcoulomb                = 1.2
+vdwtype                 = Cut-off
+vdw-modifier            = Force-switch
+rvdw_switch             = 1.0
+rvdw                    = 1.2
+;
+tcoupl                  = v-rescale
+tc_grps                 = SYSTEM
+tau_t                   = 1.0
+ref_t                   = 300
+;
+pcoupl                  = c-rescale
+pcoupltype              = semiisotropic 
+tau_p                   = 5.0
+compressibility         = 4.5e-5  4.5e-5
+ref_p                   = 1.0     1.0
+;
+constraints             = h-bonds
+constraint_algorithm    = LINCS
+continuation            = yes
+refcoord_scaling        = com
+;
+pull = yes
+pull_nstfout = 1000
+pull_nstxout = 1000
+pull_fout_average = no
+pull-pbc-ref-prev-step-com = yes
+;
+pull_ngroups = 9
+pull_ncoords = 6
+;
+pull_group1_name = BS1
+pull_group2_name = EPJ1
+pull_group3_name = BS2
+pull_group4_name = EPJ2
+pull_group5_name = PROT
+pull-group5-pbcatom = 4837
+pull_group6_name = EPJ1_NT
+pull_group7_name = EPJ1_CT
+pull_group8_name = EPJ2_NT
+pull_group9_name = EPJ2_CT
+;
+pull_coord1_groups = 1 2
+pull_coord1_type = flat-bottom
+pull_coord1_dim = Y Y Y
+pull_coord1_geometry = distance
+pull_coord1_start = no
+pull-coord1-init  = 0.4
+pull-coord1-k    = 0 ; not pulling, just monitoring the distance
+;
+pull_coord2_groups = 3 4
+pull_coord2_type = flat-bottom
+pull_coord2_dim = Y Y Y
+pull_coord2_geometry = distance
+pull_coord2_start = no
+pull-coord2-init  = 0.4
+pull-coord2-k    = 5000 ; prevent unbinding of the other ligand
+;
+pull_coord3_groups = 2 5
+pull_coord3_type = external-potential
+pull_coord3_potential_provider = awh
+pull_coord3_dim = Y Y N ; pulling in the XY plane from pore axis
+pull_coord3_geometry = distance
+pull_coord3_start = yes
+pull_coord3_k = 0
+;
+pull_coord4_groups = 6 7
+pull_coord4_type = external-potential
+pull_coord4_potential_provider = awh
+pull_coord4_geometry = angle-axis ; orientation of ligand
+pull_coord4_start = yes
+pull_coord4_vec = 0 0 1
+;
+; restraint +-36 degree angle to binding site
+pull_coord5_groups = 2 5 1 5
+pull_coord5_type = flat-bottom
+pull_coord5_dim = Y Y N
+pull_coord5_geometry = angle
+pull_coord5_start = no
+pull-coord5-init  = 25
+pull-coord5-k    = 200000
+;
+; restraint +-1 nm distance to binding site in Z direction
+pull_coord6_groups = 2 1
+pull_coord6_type = flat-bottom
+pull_coord6_dim = N N Y
+pull_coord6_geometry = distance
+pull_coord6_start = no
+pull-coord6-init  = 1
+pull-coord6-k    = 200000
+;
+awh                        = yes
+awh_nstout                 = 100000
+awh_nbias                  = 1
+awh_nstsample              = 100
+awh_nsamples-update        = 10
+awh1_growth                = exp-linear
+awh1_equilibrate_histogram = yes
+awh1_error_init            = 20
+awh1_share_group           = 1
+;
+awh_potential              = convolved
+awh_share_multisim         = yes
+awh1_target                = cutoff
+awh1-target-cutoff         = 300
+awh1_ndim                  = 2
+awh1_user_data             = no
+;
+awh1_dim1_coord_provider   = pull
+awh1_dim1_coord_index      = 3
+awh1_dim1_force_constant   = 2000
+awh1_dim1_start            = 2.2
+awh1_dim1_end              = 6
+awh1_dim1_diffusion        = 2e-5
+awh1_dim1_cover-diameter   = 0.8
+;
+awh1_dim2_coord_provider   = pull
+awh1_dim2_coord_index      = 4
+awh1_dim2_force_constant   = 500
+awh1_dim2_start            = 0
+awh1_dim2_end              = 180
+awh1_dim2_diffusion        = 2e-5
+awh1_dim2_cover-diameter   = 0.8

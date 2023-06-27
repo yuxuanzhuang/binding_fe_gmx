@@ -1,0 +1,146 @@
+define                   = -DREST_PORE_ON
+integrator               = sd
+tinit                    = 0.0
+dt                       = 0.002
+nsteps                   = 1500000000
+init-step                = 0
+simulation-part          = 1
+comm_mode                = Linear
+nstcomm                  = 100 ; Should not be lower than nstcalcenergy
+comm_grps                = system
+nstxout                  = 0
+nstvout                  = 0
+nstfout                  = 0
+nstlog                   = 20000
+nstcalcenergy            = 100 ; Should not be higher than nstcomm
+nstenergy                = 50000
+nstxout-compressed       = 200000
+compressed-x-precision   = 1000
+compressed-x-grps        =
+energygrps               =
+cutoff-scheme            = Verlet
+nstlist                  = 20
+ns-type                  = Grid
+pbc                      = xyz
+periodic-molecules       = no
+verlet-buffer-tolerance  = 0.005
+rlist                    = 1.2
+coulombtype              = pme
+rcoulomb                 = 1.2
+epsilon-r                = 1
+epsilon-rf               = 0
+vdwtype                  = Cut-off
+vdw-modifier             = Force-switch
+rvdw_switch              = 1.0
+rvdw                     = 1.2
+table-extension          = 1.0
+energygrp-table          =
+fourierspacing           = 0.12
+fourier-nx               = 0
+fourier-ny               = 0
+fourier-nz               = 0
+pme-order                = 4
+ewald-rtol               = 1e-05
+ewald-rtol-lj            = 0.001
+lj-pme-comb-rule         = Geometric
+ewald-geometry           = 3d
+epsilon-surface          = 0
+pcoupl                   = c-rescale
+pcoupltype               = semiisotropic
+tau-p                    = 5.0
+compressibility          = 4.5e-5 4.5e-5
+ref-p                    = 1.0 1.0
+
+tcoupl                   = v-rescale
+;nsttcouple               = -1
+;nh-chain-length          = 10
+;print-nose-hoover-chain-variables = no
+tc_grps                  = system
+tau_t                    = 1.0
+ref_t                    = 300
+
+constraints              = h-bonds
+constraint_algorithm     = LINCS
+continuation            = yes
+;
+refcoord_scaling        = com
+;
+pull = yes
+pull_ngroups = 8
+pull_ncoords = 4
+pull_nstfout = 100000
+pull_nstxout = 50000
+pull_fout_average = no
+pull-pbc-ref-prev-step-com = yes
+pull_group1_name = EPJ1_N1
+pull_group2_name = EPJ1_BS_n_side
+pull_coord1_groups = 1 2
+pull_coord1_type = external-potential
+pull_coord1_potential_provider = awh
+pull_coord1_dim = Y Y Y
+pull_coord1_geometry = distance
+pull_coord1_start = yes
+
+pull_group3_name = EPJ1_CL
+pull_group4_name = EPJ1_BS_cl_side
+pull_coord2_groups = 3 4
+pull_coord2_type = external-potential
+pull_coord2_potential_provider = awh
+pull_coord2_dim = Y Y Y
+pull_coord2_geometry = distance
+pull_coord2_start = yes
+
+awh                        = yes
+awh_nstout                 = 50000
+awh_potential              = convolved
+awh_share_multisim         = yes
+awh_nbias                  = 1
+awh_nstsample              = 100
+awh_nsamples-update        = 10
+awh1_growth                = exp-linear
+awh1_equilibrate_histogram = yes
+awh1_target                = cutoff
+awh1-target-cutoff         = 400
+awh1_user_data             = no
+awh1_error_init            = 20
+awh1_share_group           = 1
+awh1_ndim                  = 2
+
+awh1_dim1_coord_provider   = pull
+awh1_dim1_coord_index      = 1
+awh1_dim1_force_constant   = 25000
+awh1_dim1_start            = 0
+awh1_dim1_end              = 3
+awh1_dim1_diffusion        = 2e-5
+awh1_dim1_cover-diameter   = 0.8
+
+awh1-dim2-coord-provider   = pull
+awh1-dim2-coord-index    = 2
+awh1_dim2_force_constant   = 25000
+
+awh1-dim2-start            = 0
+awh1-dim2-end              = 3
+awh1-dim2-diffusion        = 2e-5
+awh1-dim2-cover-diameter   = 0.8
+
+
+
+pull_group5_name = EPJ2_N1
+pull_group6_name = EPJ2_BS_n_side
+pull_coord3_groups = 5 6
+pull_coord3_type = flat-bottom
+pull_coord3_dim = Y Y Y
+pull_coord3_geometry = distance
+pull_coord3_start = no
+pull-coord3-init  = 0.4
+pull-coord3-k    = 5000
+
+pull_group7_name = EPJ2_CL
+pull_group8_name = EPJ2_BS_cl_side
+pull_coord4_groups = 7 8
+pull_coord4_type = flat-bottom
+pull_coord4_dim = Y Y Y
+pull_coord4_geometry = distance
+pull_coord4_start = no
+pull-coord4-init  = 0.4
+pull-coord4-k    = 5000
