@@ -1,0 +1,31 @@
+;Add CAM Model in Charmm forcefield
+;20190418 by Chunhong Liu
+
+Step 1. copy the folder gen-cam-itp to charmm-gui/gromacs/toppar, copy the file cam.itp and nbfix_cam.itp to charmm-gui/gromacs/toppar.
+
+Add the following lines in gromacs/toppar/charmm36.itp in atomtypes.
+  Dz       28.08    0.0000  A       0.2670     6.78
+  Da        2.00    0.0000  A       0.0095     2.20
+Include nbfix_cam.itp file in nonbond_params. 
+
+NOTE: Please use the default TIP3 water in Charmm forcefield.
+
+Step 2. Prepare the topol file
+Include the cam.itp *directly* after the line of `#include charmm36.itp' in the topol file.
+Change the name of molecule CAL into CAM under the section of `[ molecules ]'
+
+Step 3. Check the Structure file
+Make sure the atom name for calcium in gro file is CAL, which is default in Charmm forcefield. If not, change it into CAL.
+
+Step 4. Replace the single-site calcium atom with cam.
+copy put-octahedral-cam-to-gro.pl file to the current folder, run the script. 
+./put-octahedral-cam-to-gro.pl 0.0905 system.gro > system_cam.gro
+Change total number of atoms in system_cam.gro at first row.
+
+./put-octahedral-cam-to-pdf.pl is for pdb structures. Please adjust the script if it fails for the format of your pdb file.
+
+Step 5. Check the new system
+You can use vmd to visualize the new system with cam. Use "resname CAM" to select the cam. 
+
+Step 6. Generate tpr for gromacs simulation.
+Use the option -maxwarn 2 to ignore the warning of atomtype overwriting due to definitions of Dz and Da in charmm36.itp and cam.itp.
