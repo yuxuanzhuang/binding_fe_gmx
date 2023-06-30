@@ -118,6 +118,9 @@ class AWH_Ensemble(object):
             self.awh_pullf_files.append(folder + '/' + self.pullf_file)
             self.awh_log_files.append(folder + '/' + self.log_file)
             self.awh_dhdl_files.append(folder + '/' + self.dhdl_file)
+
+        if len(self.rep_folder) == 0:
+            raise ValueError(f'No replicate folders found in {self.folder}.')
             
         self.rep_folder.sort(key=lambda x: eval(x.split('/')[-1][-1])) # sort by replicate number
         self.awh_pullx_files.sort(key=lambda x: eval(x.split('/')[-2][-1])) # sort by replicate number

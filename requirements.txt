@@ -7,4 +7,5 @@ tqdm
 numpy
 pandas
 scikit-learn
+GromacsWrapper
 mdanalysis @ git+https://github.com/yuxuanzhuang/mdanalysis#egg=with_fasttrans&subdirectory=package

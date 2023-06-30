@@ -12,4 +12,14 @@ Binding Free Energy with Gromacs Documentation
    installation
    usage
    release-history
-   min_versions
+
+.. toctree::
+    :maxdepth: 0
+    :caption: Examples:
+
+    examples/awh
+     
+Indices and tables
+==================
+* :ref:`genindex`
+* :ref:`search`
