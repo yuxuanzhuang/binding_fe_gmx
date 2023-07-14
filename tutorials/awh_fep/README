@@ -1,15 +1,27 @@
 Tutorial of AWH with FEP pulling
 
-EPJ is a positively charged molecule and thus need to
-be coupled with an additional chloride ion to be annihilated.
+EPJ is a positively charged molecule and needs to
+be coupled with an chloride ion to be annihilated.
 
 Step 1: Prepare the system
-- modify the PDB file to move one of the chloride ions to the end of the first EPJ molecule
+- modify the PDB file (save as start_fep.pdb) to move one of the chloride ions to the end of the first EPJ molecule
 - modify the EPJ1.itp file to add the chloride ion. A flat-bottom restraint is added to keep the chloride ion away from the EPJ.
 - modify the topol.top file
 
 Step 2: Prepare the index file
 - run through get_binding_site_epj.ipynb
 
-Step 3: Run the simulation
+Step 3: Run a test simulation to get the block format of the pmf and set target distribution
+- with awh_fep_getinit.mdp file
+- mkdir awh_fep
+- grompp -f mdp/awh_pore_angle_fep.mdp -o awh_fep/awh_fep.tpr -c start_fep.pdb -r start_fep.pdb -p topol_fep.top -maxwarn 2 -n index_fep.ndx
+- cd awh_fep
+- gmx mdrun -v -deffnm awh_fep -nsteps 10000 -dhdl dhdl
+- gmx awh -f awh_fep.edr -s awh_fep.tpr -more -o awh.xvg
+- run through get_init_AWH.ipynb and get awhinit.xvg
+
+Step 4: Create the AWH input file
 - with awh_fep.mdp file
+- create 8 replicates
+- copy awhinit.xvg to **each** of the replicate folders
+- add `-awh awhinit.xvg` to mdrun command

@@ -1,10 +1,5 @@
 define                   = -DREST_PORE_ON
-
-
-################################################
 integrator               = sd
-################################################
-
 tinit                    = 0.0
 dt                       = 0.002
 nsteps                   = 1500000000
@@ -48,7 +43,6 @@ constraint_algorithm    = LINCS
 continuation            = yes
 refcoord_scaling        = com
 ;
-################################################
 free-energy              = yes
 couple-lambda0           = none
 couple-lambda1           = vdwq
@@ -63,7 +57,6 @@ sc_sigma                 = 0.3
 sc_power                 = 1
 sc_coul                  = yes
 nstdhdl                  = 1000
-################################################
 ;
 pull = yes
 pull_nstfout = 1000
@@ -109,16 +102,14 @@ pull_coord3_geometry = distance
 pull_coord3_start = yes
 pull_coord3_k = 0
 ;
-################################################
 pull_coord4_groups = 6 7
 pull_coord4_type =flat-bottom
 pull_coord4_geometry = angle-axis ; orientation of ligand
 pull_coord4_start = no
 pull_coord4_vec = 0 0 1
 pull-coord4-k    = 0 ; not pulling, just monitoring the angle
-################################################
 ;
-; restraint +-25 degree angle to binding site
+; restraint +-36 degree angle to binding site
 pull_coord5_groups = 2 5 1 5
 pull_coord5_type = flat-bottom
 pull_coord5_dim = Y Y N
@@ -149,16 +140,9 @@ awh1_share_group           = 1
 awh_potential              = umbrella
 awh_share_multisim         = yes
 awh1_target                = cutoff
-
-################################################
 awh1-target-cutoff         = 400
-################################################
-
 awh1_ndim                  = 2
-
-################################################
-awh1_user_data             = yes
-################################################
+awh1_user_data             = no
 ;
 awh1_dim1_coord_provider   = pull
 awh1_dim1_coord_index      = 3
@@ -168,11 +152,8 @@ awh1_dim1_end              = 6
 awh1_dim1_diffusion        = 2e-5
 awh1_dim1_cover-diameter   = 0.8
 ;
-
-################################################
 awh1-dim2-coord-provider   = fep-lambda
 awh1-dim2-start            = 0
 awh1-dim2-end              = 20
 awh1-dim2-diffusion        = 5e-5
 awh1-dim2-cover-diameter   = 21
-################################################
