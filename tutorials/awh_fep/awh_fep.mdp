@@ -1,5 +1,9 @@
 define                   = -DANCOR_PROT
+
+#############################
 integrator               = sd
+#############################
+
 tinit                    = 0.0
 dt                       = 0.002
 nsteps                   = 1500000000
@@ -65,6 +69,7 @@ continuation            = yes
 ;
 refcoord_scaling        = com
 ;
+########################################
 free-energy              = yes
 couple-lambda0           = none
 couple-lambda1           = vdwq
@@ -79,6 +84,7 @@ sc_sigma                 = 0.3
 sc_power                 = 1
 sc_coul                  = yes
 nstdhdl                  = 1000
+########################################
 ;
 pull = yes
 pull_ngroups = 13
@@ -151,7 +157,11 @@ pull_coord6_start = yes
 ;
 awh                        = yes
 awh_nstout                 = 100000
+
+#####################################
 awh_potential              = umbrella
+#####################################
+
 awh_share_multisim         = yes
 awh_nbias                  = 1
 awh_nstsample              = 100
@@ -159,7 +169,10 @@ awh_nsamples-update        = 10
 awh1_growth                = exp-linear
 awh1_equilibrate_histogram = yes
 awh1_target                = cutoff
+
+#####################################
 awh1-target-cutoff         = 400
+#####################################
 awh1_user_data             = no
 awh1_error_init            = 20
 awh1_share_group           = 1
@@ -173,11 +186,13 @@ awh1_dim1_end              = 6
 awh1_dim1_diffusion        = 2e-5
 awh1_dim1_cover-diameter   = 0.8
 
+#####################################
 awh1-dim2-coord-provider   = fep-lambda
 awh1-dim2-start            = 0
 awh1-dim2-end              = 20
 awh1-dim2-diffusion        = 5e-5
 awh1-dim2-cover-diameter   = 21
+#####################################
 
 awh1_dim3_coord_provider   = pull
 awh1_dim3_coord_index      = 9

@@ -1,0 +1,15 @@
+Tutorial of AWH with FEP pulling
+
+EPJ is a positively charged molecule and thus need to
+be coupled with an additional chloride ion to be annihilated.
+
+Step 1: Prepare the system
+- modify the PDB file to move one of the chloride ions to the end of the first EPJ molecule
+- modify the EPJ1.itp file to add the chloride ion. A flat-bottom restraint is added to keep the chloride ion away from the EPJ.
+- modify the topol.top file
+
+Step 2: Prepare the index file
+- run through get_binding_site_epj.ipynb
+
+Step 3: Run the simulation
+- with awh_fep.mdp file
