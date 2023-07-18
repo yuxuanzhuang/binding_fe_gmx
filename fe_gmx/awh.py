@@ -406,6 +406,9 @@ class AWH_2D_Ensemble(AWH_Ensemble):
 
     def generate_pmf_video(self,
                            name,
+                           levels=None,
+                           vmax=None,
+                           cmap='coolwarm',
                            stride=1,
                            remove_img=True,
                            ffmpeg='ffmpeg'):
@@ -417,6 +420,14 @@ class AWH_2D_Ensemble(AWH_Ensemble):
         name : str
             The name of the video.
             saved under the folder `video/`.
+        levels: np.array
+            The levels to plot the PMF.
+            Default is None
+        vmax: float
+            The max value to plot.
+            Default is None
+        cmap: str
+            colormap
         stride : int
             The stride of the time series.
         remove_img : bool
@@ -431,6 +442,10 @@ class AWH_2D_Ensemble(AWH_Ensemble):
                             total=len(self.awh_results.pmf[::stride])):
             time = self.awh_results.timeseries[i*stride]
 
+            if levels is None:
+                levels = 100
+            
+
             awh_cv1 = awh_pmf.T[0][0]
             awh_cv2 = awh_pmf[0].T[1]
             awh_fes = awh_pmf[:,:,2].T
@@ -440,8 +455,9 @@ class AWH_2D_Ensemble(AWH_Ensemble):
                         awh_cv1,
                         awh_cv2,
                         awh_fes,
-        #                vmax=100,
-                        levels=1000)
+                        cmap=cmap,
+                        vmax=vmax,
+                        levels=levels)
 
             ax.set_ylabel(f'$\lambda$')
             ax.set_xlabel('dist (nm)')
@@ -502,3 +518,105 @@ class AWH_3D_Ensemble(AWH_Ensemble):
                         'PMF'])
         
         return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf
+    
+
+    def generate_pmf_video(self,
+                           name,
+                           marginalize_cv,
+                           levels=None,
+                           vmax=None,
+                           cmap='coolwarm',
+                           stride=1,
+                           remove_img=True,
+                           ffmpeg='ffmpeg'):
+        """
+        Generate a video of the 3D PMF time evolution.
+
+        Parameters
+        ----------
+        name : str
+            The name of the video.
+            saved under the folder `video/`.
+        levels: np.array
+            The levels to plot the PMF.
+            Default is None
+        vmax: float
+            The max value to plot.
+            Default is None
+        cmap: str
+            colormap
+        marginalize_cv: int
+            The CV that will be marginalized.
+        stride : int
+            The stride of the time series.
+        remove_img : bool
+            Whether to remove the images after the video is generated.
+            Default is True.
+        ffmpeg : str
+            The path to the ffmpeg executable.
+        """
+        os.makedirs(self.folder + '/video/', exist_ok=True)
+        from tqdm import tqdm
+        for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
+                            total=len(self.awh_results.pmf[::stride])):
+            time = self.awh_results.timeseries[i*stride]
+
+            awh_cv1 = awh_pmf.T[0][0][0]
+            awh_cv2 = awh_pmf.transpose(0,3,2,1)[0][1][0]
+            awh_cv3 = awh_pmf[0].T[2].T[0]
+            awh_fes = awh_pmf[:,:,:,3].T
+
+            # integral over CV2
+            awh_fes_int = np.zeros((awh_fes.shape[1], awh_fes.shape[2]))
+
+            for i in range(awh_fes.shape[1]):
+                for j in range(awh_fes.shape[2]):
+                    awh_fes_int[i,j] = np.trapz(np.exp(-awh_fes[:, i, j] / self.kT), awh_cv3)
+            awh_fes_int = -np.log(awh_fes_int) * self.kT
+
+            if levels == None:
+                levels = 100
+
+            fig, ax = plt.subplots(figsize=(7,9))
+            mappable = ax.contourf(
+                        awh_cv1,
+                        awh_cv2,
+                        awh_fes_int,
+                        vmax=vmax,
+                        levels=levels)
+
+            ax.set_ylabel(f'$\lambda$')
+            ax.set_xlabel('dist (nm)')
+            ax.set_title('{:.0f} ns PMF'.format(eval(time[1:]) / 1000), fontsize=20)
+            cbar = fig.colorbar(mappable)
+            cbar.set_label(f'PMF ({self.unit})')
+            plt.savefig(f'{self.folder}/video/{name}_{i}.png')
+            plt.close()
+        
+        # generate video with ffmpeg
+
+        ffmpeg_command = [ffmpeg,
+                '-y',
+                '-framerate', '10',
+                '-i', f'{name}_%d.png',
+                '-r', '30',
+                '-b', '5000k',
+                '-vcodec', 'mpeg4',
+                f'{name}.mp4']
+
+        process = subprocess.Popen(ffmpeg_command,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True,
+                        bufsize=0,
+                        cwd=self.folder + '/video/')
+        process.stdin.close()
+
+        for line in process.stdout:
+            print(line.strip())
+        for line in process.stderr:
+            print(line.strip())
+        
+        if remove_img:
+            os.system(f'rm {self.folder}/video/{name}_*.png')
