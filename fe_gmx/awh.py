@@ -14,10 +14,9 @@ from .utils.dhdl import AWH_DHDL
 from .utils.xvg import XVG, AWH_1D_XVG, AWH_2D_XVG, AWH_3D_XVG
 from .utils.log import AWH_LOG
 
-
 class AWH_Ensemble(object):
     """
-    1D AWH ensemble class.
+    AWH ensemble base class.
     It stores the awh results from `gmx awh` command as well as the pulling data.
     """
     def __init__(self,
@@ -33,6 +32,7 @@ class AWH_Ensemble(object):
                  regenerate_awh: bool = False,
                  regenerate_dhdl: bool = False,
                  temperature: float = 300.0,
+                 tmp=True,
                  ):
         """
         Parameters
@@ -72,8 +72,32 @@ class AWH_Ensemble(object):
         temperature : float, optional
             The temperature of the simulation to set up kT value,
             by default 300.0
+        tmp : bool, optional
+            Whether to create a tmp folder no matter the folder can be written or not,
+            by default False
         """
         self.folder = folder
+
+        # if folder cannot be found, raise error
+        if not os.path.exists(self.folder):
+            raise FileNotFoundError(f'{self.folder} not found.')
+
+        # convert folder to absolute path
+        self.folder = os.path.abspath(self.folder)
+        self.tmp = tmp
+        
+        # if folder cannot be written, create a tmp folder
+        if not os.access(self.folder, os.W_OK) or self.tmp:
+            basename = os.path.basename(self.folder)
+            # warning
+            print(f'WARNING: {self.folder} cannot be written.')
+            print(f'         or tmp=True is set.')
+            print(f'         Creating a tmp folder {basename}_tmp.')
+            os.makedirs(f'{basename}_tmp', exist_ok=True)
+            self.write_folder = f'{basename}_tmp'
+        else:
+            self.write_folder = self.folder
+            
         self.replicate_prefix = replicate_prefix
         self.awh_result_folder = awh_result_folder
         self.pullx_file = pullx_file
@@ -96,6 +120,7 @@ class AWH_Ensemble(object):
         self.awh_results = Results()
         self.awh_results.timeseries = []
         self.awh_results.pmf = []
+        self.awh_pmf = []
 
         self._gather_data()
 
@@ -148,16 +173,16 @@ class AWH_Ensemble(object):
                 raise FileNotFoundError(f'{f} not found.')
         for f in self.awh_pullx_files:
             if not os.path.exists(f):
-                raise FileNotFoundError(f'{f} not found.')
+                print(f'WARNING: {f} not found.')
         for f in self.awh_pullf_files:
             if not os.path.exists(f):
-                raise FileNotFoundError(f'{f} not found.')
+                print(f'WARNING: {f} not found.')
         for f in self.awh_log_files:
             if not os.path.exists(f):
                 raise FileNotFoundError(f'{f} not found.')
         for f in self.awh_dhdl_files:
             if not os.path.exists(f):
-                print('WARNING: No awh_dhdl file found. Check the folder name.')
+#                print('WARNING: No awh_dhdl file found. Check the folder name.')
                 self.no_dhdl_file = True
                 break
             else:
@@ -200,10 +225,21 @@ class AWH_Ensemble(object):
         for awh_files in tqdm(self.awh_pmf_files[::self.stride],
                               desc='Generating PMF data',
                               total=len(self.awh_pmf_files[::self.stride])):
-            time, unit, awh_pmf = self.get_awh_pmf(awh_files, self.results_more)
+            time, unit, awh_pmf, awh_pmf_xvg = self.get_awh_pmf(awh_files, self.results_more)
             self.awh_results.timeseries.append(time)
             self.awh_results.pmf.append(awh_pmf)
+            self.awh_pmf.append(awh_pmf_xvg)
             self.unit = unit
+
+            self.sample_weights = []
+            self.est_error = []
+            for pmf in self.awh_pmf:
+                self.sample_weights.append(pmf.log_sample_weight)
+                self.est_error.append(pmf.taget_error)
+
+            self.timeseries = []
+            for time in self.awh_results.timeseries:
+                self.timeseries.append(eval(time[1:]))
 
     def _generate_dhdl_data(self):
         print('Generating dH/dl data...')
@@ -220,14 +256,14 @@ class AWH_Ensemble(object):
     def _regenerate_awh(self):
         import gromacs
         cwd = os.getcwd()
-        os.makedirs(f'{self.folder}/{self.awh_result_folder}', exist_ok=True)
-        os.chdir(f'{self.folder}/{self.awh_result_folder}')
+        os.makedirs(f'{self.write_folder}/{self.awh_result_folder}', exist_ok=True)
+        os.chdir(f'{self.write_folder}/{self.awh_result_folder}')
         # remove xvg files from previous run
         for file in glob.glob('*.xvg'):
             os.remove(file)
-        awh_command = gromacs.awh(f=f'../{self.replicate_prefix}1/{self.awh_prefix}.edr',
+        awh_command = gromacs.awh(f=f'{self.folder}/{self.replicate_prefix}1/{self.awh_prefix}.edr',
                         o=f'{self.awh_prefix}.xvg',
-                        s=f'../{self.replicate_prefix}1/{self.awh_prefix}.tpr',
+                        s=f'{self.folder}/{self.replicate_prefix}1/{self.awh_prefix}.tpr',
                         skip=10,
                         more=True)
         # remove files starting with #
@@ -235,12 +271,13 @@ class AWH_Ensemble(object):
             os.remove(file)
         os.chdir(cwd)
         self.awh_pmf_files = []
-        for f in glob.glob(f'{self.folder}/{self.awh_result_folder}/{self.awh_prefix}*'):
+        for f in glob.glob(f'{self.write_folder}/{self.awh_result_folder}/{self.awh_prefix}*'):
             self.awh_pmf_files.append(f)
         self.awh_pmf_files.sort(key=lambda x: eval(x.split('/')[-1].split('.')[0].split('_')[1][1:]))
 
 
     def _generate_dhdl_files(self):
+        raise NotImplementedError('dhdl cannot be generated yet.')
         import gromacs
         cwd = os.getcwd()
 
@@ -255,7 +292,129 @@ class AWH_Ensemble(object):
                 os.remove(file)
             os.chdir(cwd)
             
+    def generate_pmf_video(self,
+                           name,
+                           stride=1,
+                           levels=None,
+                           vmax=None,
+                           cmap='coolwarm',
+                           pmf_label='PMF',
+                           marginalize_cv=None,
+                           remove_img=True,
+                           ffmpeg='ffmpeg',
+                           **kwargs):
+        """
+        Generate a video of the PMF time evolution.
 
+        Parameters
+        ----------
+        name : str
+            The name of the video.
+            saved under the folder `video/`.
+        stride : int
+            The stride of the time series.
+        levels: np.array
+            The levels to plot the PMF.
+            Default is None
+        vmax: float
+            The max value to plot.
+            Default is None
+        cmap: str
+            colormap
+            Default is 'coolwarm'
+        pmf_label: str
+            The label of the PMF.
+            Default is 'PMF'
+        marginalize_cv: int
+            The CV that will be marginalized.
+        remove_img : bool
+            Whether to remove the images after the video is generated.
+            Default is True.
+        ffmpeg : str
+            The path to the ffmpeg executable.
+        """
+
+        os.makedirs(self.write_folder + '/video/', exist_ok=True)
+        from tqdm import tqdm
+        for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
+                            total=len(self.awh_results.pmf[::stride])):
+            fig, ax = plt.subplots(figsize=(7,9))
+            time = self.awh_results.timeseries[i*stride]
+
+            _, mappable, plot_cbar = self.plot_pmf(awh_pmf, timeseries=time, ax=ax,
+                                                   levels=levels, vmax=vmax, cmap=cmap, kT=self.kT,
+                                                   pmf_label=pmf_label,
+                                                   marginalize_cv=marginalize_cv,
+                                                   **kwargs)
+            if plot_cbar:
+                cbar = fig.colorbar(mappable)
+                cbar.set_label(f'{pmf_label}')
+
+            time_ns = eval(time[1:]) / 1000
+            ax.set_title(f'{time_ns:.0f} ns {pmf_label}', fontsize=20)
+            plt.savefig(f'{self.write_folder}/video/{name}_{i}.png')
+            plt.close()
+        
+        # generate video with ffmpeg
+
+        ffmpeg_command = [ffmpeg,
+                '-y',
+                '-framerate', '5',
+                '-i', f'{name}_%d.png',
+                '-r', '30',
+                '-b', '5000k',
+                '-vcodec', 'mpeg4',
+                f'{name}.mp4']
+
+        process = subprocess.Popen(ffmpeg_command,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True,
+                        bufsize=0,
+                        cwd=self.write_folder + '/video/')
+        process.stdin.close()
+
+        for line in process.stdout:
+            print(line.strip())
+        for line in process.stderr:
+            print(line.strip())
+        
+        if remove_img:
+            os.system(f'rm {self.write_folder}/video/{name}_*.png')
+    
+    def __repr__(self) -> str:
+        return f'AWH_Ensemble(replicate_prefix={self.replicate_prefix}, stride={self.stride}, results_more={self.results_more})'
+
+    @property
+    def kT(self):
+        """
+        Energy conversion factor.
+        """
+        if self.unit == 'kJ/mol':
+            return self.temperature * 0.00831446261815324
+        elif self.unit == 'kcal/mol':
+            return self.temperature * 0.0019872041
+        elif self.unit == 'kT':
+            return 1
+        elif self.unit == 'unknown':
+            return 1
+        else:
+            raise ValueError('Unknown unit.')
+
+    @staticmethod
+    def get_awh_pmf(awh_file, results_more):
+        raise NotImplementedError('Use AWH_1D_Ensemble, AWH_2D_Ensemble, or AWH_3D_Ensemble instead.')
+
+    @staticmethod
+    def plot_pmf(awh_pmf, timeseries=None, ax=None, **kwargs):
+        raise NotImplementedError('Use AWH_1D_Ensemble, AWH_2D_Ensemble, or AWH_3D_Ensemble instead.')   
+
+
+class AWH_1D_Ensemble(AWH_Ensemble):
+    """
+    AWH ensemble class for 1D PMF.
+    """
     @staticmethod
     def get_awh_pmf(awh_file, results_more):
         """
@@ -287,99 +446,42 @@ class AWH_Ensemble(object):
                         'dim1',
                         'PMF'])        
         
-        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf
+        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf, awh_pmf_xvg
 
-    def generate_pmf_video(self,
-                           name,
-                           stride=1,
-                           remove_img=True,
-                           ffmpeg='ffmpeg'):
+    @staticmethod
+    def plot_pmf(awh_pmf, timeseries=None, ax=None, **kwargs):
         """
-        Generate a video of the PMF time evolution.
+        Plot the 1D PMF.
 
         Parameters
         ----------
-        name : str
-            The name of the video.
-            saved under the folder `video/`.
-        stride : int
-            The stride of the time series.
-        remove_img : bool
-            Whether to remove the images after the video is generated.
-            Default is True.
-        ffmpeg : str
-            The path to the ffmpeg executable.
+        awh_pmf: np.array
+            The PMF generated from `gmx awh`.
+        timeseries : np.array, optional
+            The time series of the PMF, by default None
+        ax : plt.axes, optional
+            The axes to plot the PMF, by default None
+        **kwargs : dict
+            Other arguments to pass to plt.plot
         """
 
-        os.makedirs(self.folder + '/video/', exist_ok=True)
-        from tqdm import tqdm
-        for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
-                            total=len(self.awh_results.pmf[::stride])):
-            time = self.awh_results.timeseries[i*stride]
+        cv_labels = kwargs.pop('cv_labels', ['CV1'])
+        pmf_label = kwargs.pop('pmf_label', 'PMF')
+        awh_cv1 = awh_pmf.T[0]
+        awh_fes = awh_pmf[:,2].T
 
-            awh_cv1 = awh_pmf.T[0][0]
-            awh_fes = awh_pmf[:,:,1].T
-
-            fig, ax = plt.subplots(figsize=(7,9))
-            mappable = ax.plot(
-                        awh_cv1,
-                        awh_fes,
-        #                vmax=100,
-                        levels=1000)
-
-            ax.set_ylabel(f'PMF')
-            ax.set_xlabel('CV')
-            ax.set_title('{:.0f} ns PMF'.format(eval(time[1:]) / 1000), fontsize=20)
-            plt.savefig(f'{self.folder}/video/{name}_{i}.png')
-            plt.close()
-        
-        # generate video with ffmpeg
-
-        ffmpeg_command = [ffmpeg,
-                '-y',
-                '-framerate', '10',
-                '-i', f'{name}/{name}_%d.png',
-                '-r', '30',
-                '-b', '5000k',
-                '-vcodec', 'h264',
-                f'{name}/{name}.mp4']
-
-        process = subprocess.Popen(ffmpeg_command,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        bufsize=0,
-                        cwd=self.folder + '/video/')
-        process.stdin.close()
-
-        for line in process.stdout:
-            print(line.strip())
-        for line in process.stderr:
-            print(line.strip())
-        
-        if remove_img:
-            os.system(f'rm {self.folder}/video/{name}_*.png')
-    
-    def __repr__(self) -> str:
-        return f'AWH_Ensemble(replicate_prefix={self.replicate_prefix}, stride={self.stride}, results_more={self.results_more})'
-
-    @property
-    def kT(self):
-        """
-        Energy conversion factor.
-        """
-        if self.unit == 'kJ/mol':
-            return self.temperature * 0.00831446261815324
-        elif self.unit == 'kcal/mol':
-            return self.temperature * 0.0019872041
-        elif self.unit == 'kT':
-            return 1
-        elif self.unit == 'unknown':
-            return 1
+        if ax is None:
+            fig, ax = plt.subplots()
+        if timeseries is None:
+            mappable = ax.plot(awh_cv1, awh_fes, **kwargs)
         else:
-            raise ValueError('Unknown unit.')
+            mappable = ax.plot(awh_cv1, awh_fes, label=f'{timeseries}', **kwargs)
+            ax.legend()
+        ax.set_xlabel(cv_labels[0])
 
+        ax.set_ylabel(pmf_label)
+        return ax, mappable, False
+    
 class AWH_2D_Ensemble(AWH_Ensemble):
     """
     AWH ensemble class for 2D PMF.
@@ -402,98 +504,50 @@ class AWH_2D_Ensemble(AWH_Ensemble):
                         'dim1', 'dim2',
                         'PMF'])
         
-        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf
+        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf, awh_pmf_xvg
 
-    def generate_pmf_video(self,
-                           name,
-                           levels=None,
-                           vmax=None,
-                           cmap='coolwarm',
-                           stride=1,
-                           remove_img=True,
-                           ffmpeg='ffmpeg'):
+    @staticmethod
+    def plot_pmf(awh_pmf, timeseries=None, ax=None, **kwargs):
         """
-        Generate a video of the 2D PMF time evolution.
+        Plot the 2D PMF.
 
         Parameters
         ----------
-        name : str
-            The name of the video.
-            saved under the folder `video/`.
-        levels: np.array
-            The levels to plot the PMF.
-            Default is None
-        vmax: float
-            The max value to plot.
-            Default is None
-        cmap: str
-            colormap
-        stride : int
-            The stride of the time series.
-        remove_img : bool
-            Whether to remove the images after the video is generated.
-            Default is True.
-        ffmpeg : str
-            The path to the ffmpeg executable.
+        awh_pmf: np.array
+            The PMF generated from `gmx awh`.
+        timeseries : np.array, optional
+            The time series of the PMF, by default None
+        ax : plt.axes, optional
+            The axes to plot the PMF, by default None
+        **kwargs : dict
+            Other arguments to pass to plt.plot
         """
-        os.makedirs(self.folder + '/video/', exist_ok=True)
-        from tqdm import tqdm
-        for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
-                            total=len(self.awh_results.pmf[::stride])):
-            time = self.awh_results.timeseries[i*stride]
 
-            if levels is None:
-                levels = 100
-            
+        cmap = kwargs.pop('cmap', 'coolwarm')
+        vmax = kwargs.pop('vmax', None)
+        levels = kwargs.pop('levels', None)
+        cv_labels = kwargs.pop('cv_labels', ['CV1', 'CV2'])
 
-            awh_cv1 = awh_pmf.T[0][0]
-            awh_cv2 = awh_pmf[0].T[1]
-            awh_fes = awh_pmf[:,:,2].T
+        awh_cv1 = awh_pmf.T[0][0]
+        awh_cv2 = awh_pmf[0].T[1]
+        awh_fes = awh_pmf[:,:,2].T
+        if ax is None:
+            fig, ax = plt.subplots()
 
-            fig, ax = plt.subplots(figsize=(7,9))
-            mappable = ax.contourf(
-                        awh_cv1,
-                        awh_cv2,
-                        awh_fes,
-                        cmap=cmap,
-                        vmax=vmax,
-                        levels=levels)
-
-            ax.set_ylabel(f'$\lambda$')
-            ax.set_xlabel('dist (nm)')
-            ax.set_title('{:.0f} ns PMF'.format(eval(time[1:]) / 1000), fontsize=20)
-            cbar = fig.colorbar(mappable)
-            cbar.set_label(f'PMF ({self.unit})')
-            plt.savefig(f'{self.folder}/video/{name}_{i}.png')
-            plt.close()
+        mappable = ax.contourf(
+            awh_cv1,
+            awh_cv2,
+            awh_fes,
+            cmap=cmap,
+            vmax=vmax,
+            levels=levels,
+            extend='both')
         
-        # generate video with ffmpeg
+        ax.set_xlabel(cv_labels[0])
+        ax.set_ylabel(cv_labels[1])
 
-        ffmpeg_command = [ffmpeg,
-                '-y',
-                '-framerate', '10',
-                '-i', f'{name}_%d.png',
-                '-r', '30',
-                '-b', '5000k',
-                '-vcodec', 'mpeg4',
-                f'{name}.mp4']
-
-        process = subprocess.Popen(ffmpeg_command,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        bufsize=0,
-                        cwd=self.folder + '/video/')
-        process.stdin.close()
-
-        for line in process.stdout:
-            print(line.strip())
-        for line in process.stderr:
-            print(line.strip())
-        
-        if remove_img:
-            os.system(f'rm {self.folder}/video/{name}_*.png')
+        return ax, mappable, True
+    
 
 class AWH_3D_Ensemble(AWH_Ensemble):
     """
@@ -517,106 +571,65 @@ class AWH_3D_Ensemble(AWH_Ensemble):
                         'dim1', 'dim2', 'dim3',
                         'PMF'])
         
-        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf
+        return time, awh_pmf_xvg.unit, awh_pmf_xvg.awh_pmf, awh_pmf_xvg
     
 
-    def generate_pmf_video(self,
-                           name,
-                           marginalize_cv,
-                           levels=None,
-                           vmax=None,
-                           cmap='coolwarm',
-                           stride=1,
-                           remove_img=True,
-                           ffmpeg='ffmpeg'):
-        """
-        Generate a video of the 3D PMF time evolution.
-
-        Parameters
-        ----------
-        name : str
-            The name of the video.
-            saved under the folder `video/`.
-        levels: np.array
-            The levels to plot the PMF.
-            Default is None
-        vmax: float
-            The max value to plot.
-            Default is None
-        cmap: str
-            colormap
-        marginalize_cv: int
-            The CV that will be marginalized.
-        stride : int
-            The stride of the time series.
-        remove_img : bool
-            Whether to remove the images after the video is generated.
-            Default is True.
-        ffmpeg : str
-            The path to the ffmpeg executable.
-        """
-        os.makedirs(self.folder + '/video/', exist_ok=True)
-        from tqdm import tqdm
-        for i, awh_pmf in tqdm(enumerate(self.awh_results.pmf[::stride]),
-                            total=len(self.awh_results.pmf[::stride])):
-            time = self.awh_results.timeseries[i*stride]
-
-            awh_cv1 = awh_pmf.T[0][0][0]
-            awh_cv2 = awh_pmf.transpose(0,3,2,1)[0][1][0]
-            awh_cv3 = awh_pmf[0].T[2].T[0]
-            awh_fes = awh_pmf[:,:,:,3].T
-
-            # integral over CV2
-            awh_fes_int = np.zeros((awh_fes.shape[1], awh_fes.shape[2]))
-
-            for i in range(awh_fes.shape[1]):
-                for j in range(awh_fes.shape[2]):
-                    awh_fes_int[i,j] = np.trapz(np.exp(-awh_fes[:, i, j] / self.kT), awh_cv3)
-            awh_fes_int = -np.log(awh_fes_int) * self.kT
-
-            if levels == None:
-                levels = 100
-
-            fig, ax = plt.subplots(figsize=(7,9))
-            mappable = ax.contourf(
-                        awh_cv1,
-                        awh_cv2,
-                        awh_fes_int,
-                        vmax=vmax,
-                        levels=levels)
-
-            ax.set_ylabel(f'$\lambda$')
-            ax.set_xlabel('dist (nm)')
-            ax.set_title('{:.0f} ns PMF'.format(eval(time[1:]) / 1000), fontsize=20)
-            cbar = fig.colorbar(mappable)
-            cbar.set_label(f'PMF ({self.unit})')
-            plt.savefig(f'{self.folder}/video/{name}_{i}.png')
-            plt.close()
+    @staticmethod
+    def plot_pmf(awh_pmf, timeseries=None, ax=None, **kwargs):
+            
+        cmap = kwargs.pop('cmap', 'coolwarm')
+        vmax = kwargs.pop('vmax', None)
+        levels = kwargs.pop('levels', None)
+        kT = kwargs.pop('kT', 1)
+        # integral over CV3
+        marginalize_cv = kwargs.pop('marginalize_cv', 2)
+        if marginalize_cv not in [0, 1, 2]:
+            raise ValueError('marginalize_cv should be 0, 1, or 2.')
         
-        # generate video with ffmpeg
+        cv_labels = kwargs.pop('cv_labels', ['CV1', 'CV2', 'CV3'])
+        rm_cv_lab = cv_labels.pop(marginalize_cv)
 
-        ffmpeg_command = [ffmpeg,
-                '-y',
-                '-framerate', '10',
-                '-i', f'{name}_%d.png',
-                '-r', '30',
-                '-b', '5000k',
-                '-vcodec', 'mpeg4',
-                f'{name}.mp4']
+#        print(f'Marginalizing {rm_cv_lab}...')
+    
+        awh_cv1 = awh_pmf.T[0][0][0]
+        awh_cv2 = awh_pmf.transpose(0,3,2,1)[0][1][0]
+        awh_cv3 = awh_pmf[0].T[2].T[0]
+        awh_fes = awh_pmf[:,:,:,3].T
 
-        process = subprocess.Popen(ffmpeg_command,
-                        stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE, 
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        bufsize=0,
-                        cwd=self.folder + '/video/')
-        process.stdin.close()
+        all_cvs = [awh_cv1, awh_cv2, awh_cv3]
+        int_cv = all_cvs.pop(marginalize_cv)
 
-        for line in process.stdout:
-            print(line.strip())
-        for line in process.stderr:
-            print(line.strip())
+        awh_fes_int = np.zeros((all_cvs[1].shape[0], all_cvs[0].shape[0]))
+#        awh_fes_marg = np.moveaxis(awh_fes, marginalize_cv, 2)
         
-        if remove_img:
-            os.system(f'rm {self.folder}/video/{name}_*.png')
+        # for now just hack the code
+        if marginalize_cv == 0:
+            awh_fes_marg  = awh_fes.transpose(2,0,1)
+        elif marginalize_cv == 1:
+            awh_fes_marg = awh_fes.transpose(1,0,2)
+        elif marginalize_cv == 2:
+            awh_fes_marg = awh_fes
+        else:
+            raise ValueError('marginalize_cv should be 0, 1, or 2.')
+
+        for i in range(all_cvs[1].shape[0]):
+            for j in range(all_cvs[0].shape[0]):
+                awh_fes_int[i,j] = np.trapz(np.exp(-awh_fes_marg[:, i, j] / kT), int_cv)
+        awh_fes_int = -np.log(awh_fes_int) * kT
+
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        mappable = ax.contourf(
+                    all_cvs[0],
+                    all_cvs[1],
+                    awh_fes_int,
+                    cmap=cmap,
+                    vmax=vmax,
+                    levels=levels,
+                    extend='both')
+        
+        ax.set_xlabel(cv_labels[0])
+        ax.set_ylabel(cv_labels[1])
+
+        return ax, mappable, True

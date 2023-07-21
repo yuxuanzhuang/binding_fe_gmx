@@ -45,7 +45,7 @@ class XVG(object):
         # this is useful when the simulation
         # is still running and the xvg file is not complete
         self.data = self.data.dropna()
-
+        
     def _init_data(self):
         self._init_line = 0
         self._shape = 0
@@ -65,6 +65,14 @@ class XVG(object):
                     self.unit = 'kT'
                 else:
                     self.unit = 'unknown'
+            if line.startswith('# AWH metadata: target error'):
+                # example # AWH metadata: target error = 4.63 kT = 11.55 kJ/mol
+                # get 11.55
+                self.taget_error = float(line.split('=')[2].split()[0])
+            if line.startswith('# AWH metadata: log sample weight'):
+                # example # AWH metadata: log sample weight = 37.92
+                # get 37.92
+                self.log_sample_weight = float(line.split('=')[1].split()[0])
             elif line.startswith('@') or line.startswith('#'):
                 continue
             else:
@@ -92,6 +100,8 @@ class XVG(object):
             return 1
         else:
             raise ValueError('Unknown unit.')
+
+            
 class AWH_1D_XVG(XVG):
     """
     Special class for AWH xvg file.
