@@ -32,7 +32,7 @@ class AWH_Ensemble(object):
                  regenerate_awh: bool = False,
                  regenerate_dhdl: bool = False,
                  temperature: float = 300.0,
-                 tmp=True,
+                 tmp=False,
                  ):
         """
         Parameters
@@ -104,7 +104,7 @@ class AWH_Ensemble(object):
         self.pullf_file = pullf_file
         self.dhdl_file = dhdl_file
         self.log_file = log_file
-        self.awh_prefix = self.log_file.split('.')[0]
+        self.awh_prefix = self.log_file.split('.log')[0]
         self.stride = stride
         self.results_more = results_more
         self.regenerate_awh = regenerate_awh
@@ -124,7 +124,8 @@ class AWH_Ensemble(object):
 
         self._gather_data()
 
-        self._generate_pulling_data()
+        if not self.no_pullx_file:
+            self._generate_pulling_data()
 
         if not self.no_dhdl_file:
             self._generate_dhdl_data()
@@ -161,12 +162,13 @@ class AWH_Ensemble(object):
             self._regenerate_awh()
 
         # sort by time value
-        self.awh_pmf_files.sort(key=lambda x: eval(x.split('/')[-1].split('.')[0].split('_')[1][1:]))
+        self.awh_pmf_files.sort(key=lambda x: eval(x.split('/')[-1].split('.xvg')[0].split('_')[1][1:]))
 
         # check for empty list
         if len(self.rep_folder) == 0:
             raise ValueError('No rep folder found. Check the folder name.')
 
+        self.no_pullx_file = False
         # make sure every file exists
         for f in self.awh_pmf_files:
             if not os.path.exists(f):
@@ -174,6 +176,7 @@ class AWH_Ensemble(object):
         for f in self.awh_pullx_files:
             if not os.path.exists(f):
                 print(f'WARNING: {f} not found.')
+                self.no_pullx_file = True
         for f in self.awh_pullf_files:
             if not os.path.exists(f):
                 print(f'WARNING: {f} not found.')
@@ -193,22 +196,25 @@ class AWH_Ensemble(object):
             self.no_dhdl_file = False
 
         last_awh_pmf_files_time = os.path.getmtime(self.awh_pmf_files[-1])
-        last_rep_folder_time = os.path.getmtime(self.awh_pullx_files[-1])
-        if last_rep_folder_time > last_awh_pmf_files_time:
-            if self.regenerate_awh:
-                self._regenerate_awh()
 
-            else:
-                print('WARNING: The latest walker was generated after the latest awh_pmf file.')
-                print('         add `regenerate_awh=True`.')
+        if not self.no_pullx_file:
+            last_rep_folder_time = os.path.getmtime(self.awh_pullx_files[-1])
+            if last_rep_folder_time > last_awh_pmf_files_time:
+                if self.regenerate_awh:
+                    self._regenerate_awh()
+
+                else:
+                    print('WARNING: The latest walker was generated after the latest awh_pmf file.')
+                    print('         add `regenerate_awh=True`.')
+            last_rep_folder_time = datetime.fromtimestamp(last_rep_folder_time)
+            print(f'The latest walker was generated at {last_rep_folder_time}')
 
         print(f'Found {len(self.awh_pmf_files)} awh_pmf files.')
         print(f'The latest awh_pmf file is {self.awh_pmf_files[-1]}')
         last_awh_pmf_files_time = datetime.fromtimestamp(last_awh_pmf_files_time)
         print(f'The latest awh_pmf file was generated at {last_awh_pmf_files_time}')
         print(f'Found {len(self.rep_folder)} walkers.')
-        last_rep_folder_time = datetime.fromtimestamp(last_rep_folder_time)
-        print(f'The latest walker was generated at {last_rep_folder_time}')
+
 
 
     def _generate_pulling_data(self):
@@ -273,7 +279,7 @@ class AWH_Ensemble(object):
         self.awh_pmf_files = []
         for f in glob.glob(f'{self.write_folder}/{self.awh_result_folder}/{self.awh_prefix}*'):
             self.awh_pmf_files.append(f)
-        self.awh_pmf_files.sort(key=lambda x: eval(x.split('/')[-1].split('.')[0].split('_')[1][1:]))
+        self.awh_pmf_files.sort(key=lambda x: eval(x.split('/')[-1].split('.xvg')[0].split('_')[1][1:]))
 
 
     def _generate_dhdl_files(self):
@@ -342,7 +348,10 @@ class AWH_Ensemble(object):
             time = self.awh_results.timeseries[i*stride]
 
             _, mappable, plot_cbar = self.plot_pmf(awh_pmf, timeseries=time, ax=ax,
-                                                   levels=levels, vmax=vmax, cmap=cmap, kT=self.kT,
+                                                   levels=levels,
+                                                   vmax=vmax,
+                                                   cmap=cmap,
+                                                   kT=self.kT,
                                                    pmf_label=pmf_label,
                                                    marginalize_cv=marginalize_cv,
                                                    **kwargs)
@@ -433,7 +442,7 @@ class AWH_1D_Ensemble(AWH_Ensemble):
         awh_pmf: np.array
             The PMF.
         """
-        time = awh_file.split('/')[-1].split('.')[0].split('_')[-1]
+        time = awh_file.split('/')[-1].split('.xvg')[0].split('_')[-1]
 
         if results_more:
             awh_pmf_xvg = AWH_1D_XVG(awh_file, custom_names=[
@@ -467,15 +476,16 @@ class AWH_1D_Ensemble(AWH_Ensemble):
 
         cv_labels = kwargs.pop('cv_labels', ['CV1'])
         pmf_label = kwargs.pop('pmf_label', 'PMF')
+
         awh_cv1 = awh_pmf.T[0]
         awh_fes = awh_pmf[:,2].T
 
         if ax is None:
             fig, ax = plt.subplots()
         if timeseries is None:
-            mappable = ax.plot(awh_cv1, awh_fes, **kwargs)
+            mappable = ax.plot(awh_cv1, awh_fes)
         else:
-            mappable = ax.plot(awh_cv1, awh_fes, label=f'{timeseries}', **kwargs)
+            mappable = ax.plot(awh_cv1, awh_fes, label=f'{timeseries}')
             ax.legend()
         ax.set_xlabel(cv_labels[0])
 
@@ -491,7 +501,7 @@ class AWH_2D_Ensemble(AWH_Ensemble):
         """
         Returns the 2D PMF of the AWH file.
         """
-        time = awh_file.split('/')[-1].split('.')[0].split('_')[-1]
+        time = awh_file.split('/')[-1].split('.xvg')[0].split('_')[-1]
 
         if results_more:
             awh_pmf_xvg = AWH_2D_XVG(awh_file, custom_names=[
@@ -558,7 +568,7 @@ class AWH_3D_Ensemble(AWH_Ensemble):
         """
         Returns the 3D PMF of the AWH file.
         """
-        time = awh_file.split('/')[-1].split('.')[0].split('_')[-1]
+        time = awh_file.split('/')[-1].split('.xvg')[0].split('_')[-1]
 
         if results_more:
             awh_pmf_xvg = AWH_3D_XVG(awh_file, custom_names=[
