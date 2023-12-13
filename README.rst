@@ -7,7 +7,7 @@ Binding Free Energy with Gromacs
 
 
 .. image:: https://img.shields.io/pypi/v/binding-free-energy-with-gromacs.svg
-        :target: https://pypi.python.org/pypi/binding-free-energy-with-gromacs
+   :target: https://pypi.python.org/pypi/binding-free-energy-with-gromacs
 
 
 A collection of scripts for analysis and calculation of FE simulations, e.g. with AWH + FEP.
@@ -16,10 +16,12 @@ A collection of scripts for analysis and calculation of FE simulations, e.g. wit
 * Documentation: (COMING SOON!) https://yuxuanzhuang.github.io/binding-free-energy-with-gromacs.
 
 Install with
-```
-git clone https://github.com/yuxuanzhuang/binding_fe_gmx.git
-pip install .
-```
+------------
+
+.. code-block:: bash
+
+   git clone https://github.com/yuxuanzhuang/binding_fe_gmx.git
+   pip install .
 
 Features
 --------
@@ -31,4 +33,7 @@ Features
 Documentation
 -------------
 
-For detailed tutorials and examples, please visit the official documentation at [https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/examples](https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/tutorials).
+For detailed tutorials and examples, please visit the official documentation at:
+
+- `Examples <https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/examples>`_
+- `Tutorials <https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/tutorials>`_
