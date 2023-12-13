@@ -15,7 +15,20 @@ A collection of scripts for analysis and calculation of FE simulations, e.g. wit
 * Free software: 3-clause BSD license
 * Documentation: (COMING SOON!) https://yuxuanzhuang.github.io/binding-free-energy-with-gromacs.
 
+Install with
+```
+git clone https://github.com/yuxuanzhuang/binding_fe_gmx.git
+pip install .
+```
+
 Features
 --------
 
-* TODO
+- Perform binding free energy calculations using the Adaptive Weighted Histogram (AWH) method simulations.
+- Analyze simulation data, calculate free energy changes, and extract useful information for binding affinity predictions.
+- Easily integrate this package into your Gromacs workflows.
+
+Documentation
+-------------
+
+For detailed tutorials and examples, please visit the official documentation at [https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/examples](https://github.com/yuxuanzhuang/binding_fe_gmx/tree/main/tutorials).
